@@ -66,7 +66,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    sprintf(filename, "data/PROVAO.TXT");
+    const char* situacao_str;
+    if (situacao_ordem == 1) situacao_str = "asc";
+    else if (situacao_ordem == 2) situacao_str = "desc";
+    else situacao_str = "rand";
+
+    sprintf(filename, "data/provao_%ld_%s.txt",quantidade_registros, situacao_str);
 
     // Abertura do arquivo para leitura de TEXTO
     arquivo_dados = fopen(filename, "r");
