@@ -4,8 +4,8 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "src/include/common_types.h" // Certifique-se de que este cabeçalho existe e está acessível
-#include "src/include/utils.h"        // Certifique-se de que este cabeçalho existe e está acessível
+#include "src/include/common_types.h"
+#include "src/include/utils.h"
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     if (argc < 4)
     {
         fprintf(stderr, "Uso: %s <metodo> <quantidade> <situacao> [-P]\n", argv[0]);
-        fprintf(stderr, "  <metodo>: 1=Intercalação balanceada, 2=Seleção por Subistituição, 3=QuickSort Externo\n");
+        fprintf(stderr, "  <metodo>: 1=Intercalação Balanceada, 2=Seleção por Substituição, 3=QuickSort Externo\n");
         fprintf(stderr, "  <quantidade>: 100, 1000, 10000, 100000, 471705\n");
         fprintf(stderr, "  <situacao>: 1=Ascendente, 2=Descendente, 3=Aleatoria\n");
         fprintf(stderr, "  [-P]: Opcional, exibe chaves dos registros (debug)\n");
@@ -73,14 +73,14 @@ int main(int argc, char *argv[])
 
     sprintf(filename, "data/provao_%ld_%s.txt",quantidade_registros, situacao_str);
 
-    // Abertura do arquivo para leitura de TEXTO
-    arquivo_dados = fopen(filename, "r");
+    // Abertura do arquivo para leitura
+    arquivo_dados = fopen(filename, "rb");
     if (arquivo_dados == NULL)
     {
         fprintf(stderr, "Erro: Nao foi possivel abrir o arquivo de dados '%s'. Certifique-se de que ele foi gerado.\n", filename);
         return 1;
     }
-
+    
     printf("--- Iniciando Ordenação ---\n");
     printf("Metodo: %d, Quantidade: %ld, Situacao: %d\n",
            metodo_escolhido, quantidade_registros, situacao_ordem);
@@ -89,15 +89,15 @@ int main(int argc, char *argv[])
     switch (metodo_escolhido)
     {
     case 1:
-    { // 1: Intercalação balanceada
+    { // 1: Intercalação balanceada - ordenação interna
         printf("Executando Intercalação Balanceada...\n");
         // Chamar função de intercalação balanceada aqui
         break;
     }
 
     case 2:
-    { // 2: Árvore Binária Externa
-        printf("Executando Ordenação com Árvore Binária Externa...\n");
+    { // 2: Intercalação balanceada - selec por subs
+        printf("Executando Intercalação Balanceada com Seleção por Substituição...\n");
         // Chamar função de árvore binária externa aqui
         break;
     }
@@ -109,8 +109,6 @@ int main(int argc, char *argv[])
         break;
     }
     }
-
-    // === BLOCO DE DEBUG AJUSTADO PARA ARQUIVO TEXTO - PRINTANDO TUDO ===
 
     if (exibir_chaves_debug) {
         printf("\n--- Conteudo do Arquivo (todos os campos para debug) ---\n");

@@ -11,8 +11,8 @@
 
 // Função de comparação para qsort, para ordenar notas em ordem ascendente
 int compararAscendente(const void *a, const void *b) {
-    TipoAluno *alu_a = (TipoAluno *)a;
-    TipoAluno *alu_b = (TipoAluno *)b;
+    TipoRegistro *alu_a = (TipoRegistro *)a;
+    TipoRegistro *alu_b = (TipoRegistro *)b;
     if (alu_a->nota < alu_b->nota) return -1;
     if (alu_a->nota > alu_b->nota) return 1;
     return 0;
@@ -20,8 +20,8 @@ int compararAscendente(const void *a, const void *b) {
 
 // Função de comparação para qsort, para ordenar notas em ordem descendente
 int compararDescendente(const void *a, const void *b) {
-    TipoAluno *alu_a = (TipoAluno *)a;
-    TipoAluno *alu_b = (TipoAluno *)b;
+    TipoRegistro *alu_a = (TipoRegistro *)a;
+    TipoRegistro *alu_b = (TipoRegistro *)b;
     if (alu_a->nota > alu_b->nota) return -1;
     if (alu_a->nota < alu_b->nota) return 1;
     return 0;
@@ -31,14 +31,14 @@ int compararDescendente(const void *a, const void *b) {
 void gerarArquivosBases(const char *filename, int situacao) {
     long total = 471705;
 
-    FILE *file = fopen(filename, "w"); // Cria o arquivo em modo de escrita
+    FILE *file = fopen(filename, "wb"); // Cria o arquivo em modo de escrita
     if (file == NULL) {
         perror("Erro ao criar o arquivo de dados");
         return;
     }
 
     // Aloca memória para armazenar todos os registros temporariamente
-    TipoAluno *alunos = (TipoAluno *)malloc(total * sizeof(TipoAluno));
+    TipoRegistro *alunos = (TipoRegistro *)malloc(total * sizeof(TipoRegistro));
     if (alunos == NULL) {
         perror("Erro de alocacao de memoria para registros");
         fclose(file);
@@ -50,10 +50,10 @@ void gerarArquivosBases(const char *filename, int situacao) {
 
     //passa valores do provao.txt para memoria interna
     for(long i=0; i<total; i++){
-        fscanf(inicial,"%8ld %5f",&alunos[i].insc,&alunos[i].nota);
+        fscanf(inicial,"%8lld %5f",&alunos[i].inscricao,&alunos[i].nota);
         fseek(inicial,1,1);
 
-        fgets(alunos[i].uf,3,inicial);
+        fgets(alunos[i].estado,3,inicial);
         fseek(inicial,1,1);
 
         fgets(alunos[i].cidade,51,inicial);
@@ -65,21 +65,21 @@ void gerarArquivosBases(const char *filename, int situacao) {
 
     // Aplica a ordenação conforme a situação especificada
     if (situacao == 1) {// Ordem ascendente
-        qsort(alunos, total, sizeof(TipoAluno), compararAscendente);
+        qsort(alunos, total, sizeof(TipoRegistro), compararAscendente);
     } else if (situacao == 2) { // Ordem descendente
-        qsort(alunos, total, sizeof(TipoAluno), compararDescendente);
+        qsort(alunos, total, sizeof(TipoRegistro), compararDescendente);
     } else {
         for (long i = total - 1; i > 0; i--) {
             long j = rand() % (i + 1); // Escolhe um índice aleatório
-            TipoAluno temp = alunos[i]; // Troca os alunos
+            TipoRegistro temp = alunos[i]; // Troca os alunos
             alunos[i] = alunos[j];
             alunos[j] = temp;
         }
     }
 
     // Escreve todos os alunos (ordenados ou aleatórios) no arquivo
-    for(long i=0; i<total; i++){
-        fprintf(file, "%08ld %05.1f %2s %50s %30s\n", alunos[i].insc, alunos[i].nota, alunos[i].uf, alunos[i].cidade, alunos[i].curso);
+    for (long i = 0; i < total; i++) {
+        fwrite(&alunos[i], sizeof(TipoRegistro), 1, file);
     }
 
     free(alunos); 
@@ -90,14 +90,14 @@ void gerarArquivosBases(const char *filename, int situacao) {
 
 // Gera e escreve um arquivo de dados com a quantidade e ordem especificadas
 void gerarArquivos(const char *filename, long qtd, int situacao) {
-    FILE *file = fopen(filename, "w"); // Cria o arquivo em modo de escrita
+    FILE *file = fopen(filename, "wb"); // Cria o arquivo em modo de escrita
     if (file == NULL) {
         perror("Erro ao criar o arquivo de dados");
         return;
     }
 
     // Aloca memória para armazenar todos os registros temporariamente
-    TipoAluno *alunos = (TipoAluno *)malloc(qtd * sizeof(TipoAluno));
+    TipoRegistro *alunos = (TipoRegistro *)malloc(qtd * sizeof(TipoRegistro));
     if (alunos == NULL) {
         perror("Erro de alocacao de memoria para registros");
         fclose(file);
@@ -108,19 +108,19 @@ void gerarArquivos(const char *filename, long qtd, int situacao) {
 
     // Aplica a ordenação conforme a situação especificada
     if (situacao == 1) {// Ordem ascendente
-        inicial = fopen("data/provao_471705_asc.txt","r");
+        inicial = fopen("data/provao_471705_asc.bin","r");
     } else if (situacao == 2) { // Ordem descendente
-        inicial = fopen("data/provao_471705_desc.txt","r");
+        inicial = fopen("data/provao_471705_desc.bin","r");
     } else {
-        inicial = fopen("data/provao_471705_rand.txt","r");
+        inicial = fopen("data/provao_471705_rand.bin","r");
     }
 
     //passa valores do provao.txt para memoria interna
     for(long i=0; i<qtd; i++){
-        fscanf(inicial,"%8ld %5f",&alunos[i].insc,&alunos[i].nota);
+        fscanf(inicial,"%8lld %5f",&alunos[i].inscricao,&alunos[i].nota);
         fseek(inicial,1,1);
 
-        fgets(alunos[i].uf,3,inicial);
+        fgets(alunos[i].estado,3,inicial);
         fseek(inicial,1,1);
 
         fgets(alunos[i].cidade,51,inicial);
@@ -131,8 +131,8 @@ void gerarArquivos(const char *filename, long qtd, int situacao) {
     }
     
     // Escreve todos os alunos (ordenados ou aleatórios) no arquivo
-    for(long i=0; i<qtd; i++){
-        fprintf(file, "%08ld %05.1f %2s %50s %30s\n", alunos[i].insc, alunos[i].nota, alunos[i].uf, alunos[i].cidade, alunos[i].curso);
+    for (long i = 0; i < qtd; i++) {
+        fwrite(&alunos[i], sizeof(TipoRegistro), 1, file);
     }
 
     free(alunos); 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
         else situacao_str = "rand";
 
         // Cria o nome do arquivo, direcionando-o para a pasta 'data/'
-        sprintf(filename, "data/provao_471705_%s.txt",situacao_str);
+        sprintf(filename, "data/provao_471705_%s.bin",situacao_str);
         // Chama a função para gerar o arquivo 
         gerarArquivosBases(filename,situacoes[s]);
     }
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
             else situacao_str = "rand";
 
             // Cria o nome do arquivo, direcionando-o para a pasta 'data/'
-            sprintf(filename, "data/provao_%ld_%s.txt", quantidades[q], situacao_str);
+            sprintf(filename, "data/provao_%ld_%s.bin", quantidades[q], situacao_str);
             // Chama a função para gerar o arquivo 
             gerarArquivos(filename, quantidades[q], situacoes[s]);
         }
