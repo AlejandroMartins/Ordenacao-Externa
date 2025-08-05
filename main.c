@@ -4,8 +4,11 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "src/include/common_types.h"
-#include "src/include/utils.h"
+#include "./src/include/common_types.h"
+#include "./src/include/utils.h"
+#include "./src/include/balanceada.h"
+
+
 
 int main(int argc, char *argv[])
 {
@@ -66,12 +69,15 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    const char* situacao_str;
-    if (situacao_ordem == 1) situacao_str = "asc";
-    else if (situacao_ordem == 2) situacao_str = "desc";
-    else situacao_str = "rand";
+    const char *situacao_str;
+    if (situacao_ordem == 1)
+        situacao_str = "asc";
+    else if (situacao_ordem == 2)
+        situacao_str = "desc";
+    else
+        situacao_str = "rand";
 
-    sprintf(filename, "data/provao_%ld_%s.txt",quantidade_registros, situacao_str);
+    sprintf(filename, "data/provao_%ld_%s.bin", quantidade_registros, situacao_str);
 
     // Abertura do arquivo para leitura
     arquivo_dados = fopen(filename, "rb");
@@ -80,25 +86,28 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Erro: Nao foi possivel abrir o arquivo de dados '%s'. Certifique-se de que ele foi gerado.\n", filename);
         return 1;
     }
-    
+
     printf("--- Iniciando Ordenação ---\n");
     printf("Metodo: %d, Quantidade: %ld, Situacao: %d\n",
            metodo_escolhido, quantidade_registros, situacao_ordem);
     printf("Arquivo de dados: %s\n", filename);
 
+    resetar_contadores();
+    clock_t inicio_tempo = iniciar_tempo();
+
     switch (metodo_escolhido)
     {
     case 1:
     { // 1: Intercalação balanceada - ordenação interna
-        printf("Executando Intercalação Balanceada...\n");
-        // Chamar função de intercalação balanceada aqui
+        printf("Executando Intercalação Balanceada com Ordenação Interna...\n");
+        metodo_intercalacao_ordenacao(filename, quantidade_registros);
         break;
     }
 
     case 2:
     { // 2: Intercalação balanceada - selec por subs
         printf("Executando Intercalação Balanceada com Seleção por Substituição...\n");
-        // Chamar função de árvore binária externa aqui
+        metodo_intercalacao_selecao(filename, quantidade_registros);
         break;
     }
 
@@ -110,7 +119,18 @@ int main(int argc, char *argv[])
     }
     }
 
-    if (exibir_chaves_debug) {
+    double tempo_execucao = finalizar_tempo(inicio_tempo);
+
+    printf("\n--- Resultados do Experimento ---\n");
+    printf("Transferencias (I/O): %ld\n", g_io_transferencias);
+    printf("Comparacoes: %ld\n", g_comparacoes_chaves);
+    printf("Tempo de Execucao: %.4f segundos\n", tempo_execucao);
+
+    converterBinarioParaTexto("./data/resultados/ordenado.bin", "ordenado.txt", quantidade_registros);
+    converterBinarioParaTexto(filename, "preArquivo.txt", quantidade_registros);
+    
+    if (exibir_chaves_debug)
+    {
         printf("\n--- Conteudo do Arquivo (todos os campos para debug) ---\n");
         fseek(arquivo_dados, 0, SEEK_SET);
 
@@ -118,12 +138,11 @@ int main(int argc, char *argv[])
         TipoRegistro temp_reg;
         long long count = 0;
 
-
-        while (fgets(linha, sizeof(linha), arquivo_dados) != NULL && count < quantidade_registros) {
+        while (fgets(linha, sizeof(linha), arquivo_dados) != NULL && count < quantidade_registros)
+        {
             // Remove o caractere de nova linha ('\n') ou retorno de carro ('\r') se presente
             linha[strcspn(linha, "\n\r")] = 0;
-         
-            
+
             // --- INÍCIO DA EXTRAÇÃO DOS CAMPOS ---
             // Esses offsets e tamanhos são baseados na linha:
             // '00170838 034.8 MT CUIABA                                            ADMINISTRACAO                 '
@@ -131,7 +150,7 @@ int main(int argc, char *argv[])
             // 1. Inscrição (8 caracteres: colunas 1-8, índices 0-7)
             char temp_inscricao_str[9]; // 8 chars + '\0'
             strncpy(temp_inscricao_str, linha, 8);
-            temp_inscricao_str[8] = '\0'; 
+            temp_inscricao_str[8] = '\0';
             temp_reg.inscricao = atoll(temp_inscricao_str);
 
             // 2. Nota (5 caracteres: colunas 10-14, índices 9-13)
@@ -153,18 +172,18 @@ int main(int argc, char *argv[])
             strncpy(temp_reg.curso, linha + 69, 30);
             temp_reg.curso[30] = '\0';
             trim_trailing_spaces(temp_reg.curso); // Remove espaços excedentes
-            
+
             // --- FIM DA EXTRAÇÃO DOS CAMPOS ---
 
             // Imprime todos os campos do registro para verificação
             printf("Inscricao: %lld, Nota: %.2f, Estado: '%s', Cidade: '%s', Curso: '%s'\n",
                    temp_reg.inscricao, temp_reg.nota, temp_reg.estado, temp_reg.cidade, temp_reg.curso);
-            
+
             count++;
         }
         printf("\n--- Leitura de %lld registros concluída ---\n", count);
     }
-    
+
     fclose(arquivo_dados);
     return 0;
 }
