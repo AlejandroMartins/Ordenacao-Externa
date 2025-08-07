@@ -7,8 +7,9 @@
 #include "./src/include/common_types.h"
 #include "./src/include/utils.h"
 #include "./src/include/balanceada.h"
+#include "./src/include/external_quickSort.h"
 
-
+// para compilar gcc -o ordena main.c src/balanceada.c src/utils.c src/external_quickSort.c -I src/include
 
 int main(int argc, char *argv[])
 {
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
     { // 1: Intercalação balanceada - ordenação interna
         printf("Executando Intercalação Balanceada com Ordenação Interna...\n");
         metodo_intercalacao_ordenacao(filename, quantidade_registros);
+        fclose(arquivo_dados);
         break;
     }
 
@@ -108,13 +110,43 @@ int main(int argc, char *argv[])
     { // 2: Intercalação balanceada - selec por subs
         printf("Executando Intercalação Balanceada com Seleção por Substituição...\n");
         metodo_intercalacao_selecao(filename, quantidade_registros);
+        fclose(arquivo_dados);
         break;
     }
 
     case 3:
-    { // 3: QuickSort Externo
+    {
         printf("Executando QuickSort Externo...\n");
-        // Chamar função de QuickSort Externo aqui
+
+        // Nome do arquivo de saída
+        const char *output_filename = "data/resultados/ordenacao.bin";
+        FILE *output_file = fopen(output_filename, "w+b");
+        if (output_file == NULL)
+        {
+            fprintf(stderr, "Erro ao criar arquivo de saida: '%s'\n", output_filename);
+            fclose(arquivo_dados);
+            return 1;
+        }
+
+        // Copia os registros do arquivo de entrada para o de saída
+        TipoRegistro reg;
+        long count = 0;
+        rewind(arquivo_dados);
+        while (fread(&reg, sizeof(TipoRegistro), 1, arquivo_dados) == 1 && count < quantidade_registros)
+        {
+            if (fwrite(&reg, sizeof(TipoRegistro), 1, output_file) != 1)
+            {
+                fprintf(stderr, "Erro ao escrever registro durante a copia.\n");
+                fclose(output_file);
+                fclose(arquivo_dados);
+                return 1;
+            }
+            count++;
+        }
+        fclose(arquivo_dados);
+
+        quicksort_externo(output_file, 0, quantidade_registros - 1);
+
         break;
     }
     }
@@ -126,62 +158,31 @@ int main(int argc, char *argv[])
     printf("Comparacoes: %ld\n", g_comparacoes_chaves);
     printf("Tempo de Execucao: %.4f segundos\n", tempo_execucao);
 
-    converterBinarioParaTexto("./data/resultados/ordenado.bin", "ordenado.txt", quantidade_registros);
-    converterBinarioParaTexto(filename, "preArquivo.txt", quantidade_registros);
-    
+    converterBinarioParaTexto("./data/resultados/ordenacao.bin", "./data/resultados/ordenado.txt", quantidade_registros);
+    converterBinarioParaTexto(filename, "./data/resultados/preArquivo.txt", quantidade_registros);
+
     if (exibir_chaves_debug)
     {
-        printf("\n--- Conteudo do Arquivo (todos os campos para debug) ---\n");
-        fseek(arquivo_dados, 0, SEEK_SET);
+        printf("\n--- Conteudo do Arquivo Ordenado (para debug) ---\n");
+        // Reabre o arquivo de saída ordenado para depuração
+        FILE *debug_file = fopen("./data/resultados/ordenacao.bin", "rb");
+        if (debug_file == NULL)
+        {
+            fprintf(stderr, "Erro: Nao foi possivel abrir o arquivo de saida para debug.\n");
+            return 1;
+        }
 
-        char linha[120]; // Buffer para a linha lida.
         TipoRegistro temp_reg;
         long long count = 0;
-
-        while (fgets(linha, sizeof(linha), arquivo_dados) != NULL && count < quantidade_registros)
+        rewind(debug_file);
+        while (fread(&temp_reg, sizeof(TipoRegistro), 1, debug_file) == 1 && count < quantidade_registros)
         {
-            // Remove o caractere de nova linha ('\n') ou retorno de carro ('\r') se presente
-            linha[strcspn(linha, "\n\r")] = 0;
-
-            // --- INÍCIO DA EXTRAÇÃO DOS CAMPOS ---
-            // Esses offsets e tamanhos são baseados na linha:
-            // '00170838 034.8 MT CUIABA                                            ADMINISTRACAO                 '
-
-            // 1. Inscrição (8 caracteres: colunas 1-8, índices 0-7)
-            char temp_inscricao_str[9]; // 8 chars + '\0'
-            strncpy(temp_inscricao_str, linha, 8);
-            temp_inscricao_str[8] = '\0';
-            temp_reg.inscricao = atoll(temp_inscricao_str);
-
-            // 2. Nota (5 caracteres: colunas 10-14, índices 9-13)
-            char temp_nota_str[6]; // 5 chars + '\0'
-            strncpy(temp_nota_str, linha + 9, 5);
-            temp_nota_str[5] = '\0';
-            temp_reg.nota = atof(temp_nota_str);
-
-            // 3. Estado (2 caracteres: colunas 16-17, índices 15-16)
-            strncpy(temp_reg.estado, linha + 15, 2);
-            temp_reg.estado[2] = '\0';
-
-            // 4. Cidade (50 caracteres: colunas 19-68, índices 18-67)
-            strncpy(temp_reg.cidade, linha + 18, 50);
-            temp_reg.cidade[50] = '\0';
-            trim_trailing_spaces(temp_reg.cidade); // Remove espaços excedentes
-
-            // 5. Curso (30 caracteres: colunas 70-99, índices 69-98)
-            strncpy(temp_reg.curso, linha + 69, 30);
-            temp_reg.curso[30] = '\0';
-            trim_trailing_spaces(temp_reg.curso); // Remove espaços excedentes
-
-            // --- FIM DA EXTRAÇÃO DOS CAMPOS ---
-
-            // Imprime todos os campos do registro para verificação
             printf("Inscricao: %lld, Nota: %.2f, Estado: '%s', Cidade: '%s', Curso: '%s'\n",
                    temp_reg.inscricao, temp_reg.nota, temp_reg.estado, temp_reg.cidade, temp_reg.curso);
-
             count++;
         }
         printf("\n--- Leitura de %lld registros concluída ---\n", count);
+        fclose(debug_file);
     }
 
     fclose(arquivo_dados);

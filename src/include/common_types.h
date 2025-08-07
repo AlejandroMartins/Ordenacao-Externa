@@ -1,9 +1,6 @@
 #ifndef COMMON_TYPES_H
 #define COMMON_TYPES_H
 
-#define TAM_MEMORIA 20
-#define NUM_FITAS 20
-
 // Definição comum para os Dados do Aluno
 typedef struct
 {
