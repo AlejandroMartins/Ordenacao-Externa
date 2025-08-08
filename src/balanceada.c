@@ -234,8 +234,8 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
 void metodo_intercalacao_ordenacao(const char *entrada, long n_registros)
 {
 
-    mkdir("data/fitas");
-    mkdir("data/resultados");
+    mkdir("data/fitas", 0777);
+    mkdir("data/resultados",0777);
 
     FILE *in = fopen(entrada, "rb");
     if (!in)
@@ -300,8 +300,8 @@ void metodo_intercalacao_ordenacao(const char *entrada, long n_registros)
 void metodo_intercalacao_selecao(const char *entrada, long n_registros)
 {
     printf("--- INICIANDO METODO 2: INTERCALACAO COM SELECAO POR SUBSTITUICAO ---\n");
-    mkdir("data/fitas");
-    mkdir("data/resultados");
+    mkdir("data/fitas", 0777);
+    mkdir("data/resultados",0777);
 
     FILE *in = fopen(entrada, "rb");
     if (!in)
@@ -348,9 +348,10 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
         heapify(memoria, lidos_memoria, i, congelados);
     }
     printf("Heap inicial construido com %d registros.\n", lidos_memoria);
-
+    
     while (lidos_memoria > 0)
     {
+        
         int menor_idx = 0;
         TipoRegistro menor = memoria[menor_idx];
 
@@ -398,6 +399,7 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
         {
             memoria[menor_idx] = memoria[lidos_memoria - 1];
             congelados[menor_idx] = congelados[lidos_memoria - 1];
+            congelados[lidos_memoria - 1] = 0;
             lidos_memoria--;
             printf("Fim de arquivo. Heap reduzido para %d elementos.\n", lidos_memoria);
         }

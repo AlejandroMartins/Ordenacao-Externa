@@ -185,6 +185,5 @@ int main(int argc, char *argv[])
         fclose(debug_file);
     }
 
-    fclose(arquivo_dados);
     return 0;
 }
