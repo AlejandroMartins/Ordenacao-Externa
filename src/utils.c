@@ -35,18 +35,6 @@ double finalizar_tempo(clock_t inicio) {
     return (double)(clock() - inicio) / CLOCKS_PER_SEC;
 }
 
-
-void trim_trailing_spaces(char *s)
-{
-    int i = strlen(s) - 1;
-    while (i >= 0 && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
-    {
-        s[i] = '\0';
-        i--;
-    }
-}
-
-
 void converterBinarioParaTexto(const char *arquivo_binario, const char *arquivo_texto, long quantidade_registros)
 {
     FILE *bin_file = fopen(arquivo_binario, "rb");

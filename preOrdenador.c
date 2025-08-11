@@ -7,6 +7,16 @@
 #include "./src/include/common_types.h"
 #include "./src/include/utils.h" 
 
+void trim_trailing_spaces(char *s)
+{
+    int i = strlen(s) - 1;
+    while (i >= 0 && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
+    {
+        s[i] = '\0';
+        i--;
+    }
+}
+
 // Função de comparação para qsort, para ordenar notas em ordem ascendente
 int compararAscendente(const void *a, const void *b) {
     TipoRegistro *alu_a = (TipoRegistro *)a;
@@ -24,7 +34,6 @@ int compararDescendente(const void *a, const void *b) {
     if (alu_a->nota < alu_b->nota) return 1;
     return 0;
 }
-
 
 // Gera e escreve um arquivo de dados com a quantidade e ordem especificadas
 void gerarArquivosBases(const char *filename, int situacao) {

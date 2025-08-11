@@ -13,7 +13,6 @@ void incrementar_io();
 void incrementar_comparacao();
 clock_t iniciar_tempo();
 double finalizar_tempo(clock_t inicio);
-void trim_trailing_spaces(char *str);
 void converterBinarioParaTexto(const char *arquivo_binario, const char *arquivo_texto, long quantidade_registros);
 
 #endif
