@@ -11,7 +11,4 @@ typedef struct
     char curso[31];  // 30 caracteres para o curso + 1 para '\0'
 } TipoRegistro;
 
-// Função auxiliar para remover espaços em branco do final de uma string
-
-
 #endif // COMMON_TYPES_H

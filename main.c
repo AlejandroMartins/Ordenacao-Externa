@@ -9,8 +9,6 @@
 #include "./src/include/balanceada.h"
 #include "./src/include/external_quickSort.h"
 
-// para compilar gcc -o ordena main.c src/balanceada.c src/utils.c src/external_quickSort.c -I src/include
-
 int main(int argc, char *argv[])
 {
     int metodo_escolhido;             // método de ordenação
@@ -20,11 +18,6 @@ int main(int argc, char *argv[])
 
     char filename[256];
     FILE *arquivo_dados = NULL;
-
-    // // Variáveis para medição de desempenho
-    // clock_t inicio_tempo_geral;
-    // double tempo_execucao_pesquisa;
-    // double tempo_execucao_construcao_indice;
 
     // Verifica se o número mínimo de argumentos foi fornecido
     if (argc < 4)
@@ -146,6 +139,8 @@ int main(int argc, char *argv[])
         fclose(arquivo_dados);
 
         quicksort_externo(output_file, 0, quantidade_registros - 1);
+
+        fclose(output_file);
 
         break;
     }

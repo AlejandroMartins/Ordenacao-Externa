@@ -1,8 +1,8 @@
 #to compile main:
-gcc -o pesquisa.exe main.c src/sequencial.c src/arvBin.c src/arvoreB.c src/arvoreEstrela.c src/utils.c -I./src/include -std=c99 -Wall -Wextra -g
+gcc main.c src/balanceada.c src/external_quickSort.c src/utils.c -o main.exe -Wall -g
 
 #to execute main:
-valgrind -s ./pesquisa.exe
+valgrind ./main.exe
 
 #to compile preOrdenador:
 gcc preOrdenador.c -o proOrdenador.exe -Wall

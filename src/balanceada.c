@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <time.h>
 
-// Assumindo que esses arquivos existem e contêm as definições necessárias
 #include "./include/common_types.h"
 #include "./include/utils.h"
 
@@ -26,8 +25,6 @@ int comparadorNotas(const void *a, const void *b)
         return 1;
     return 0;
 }
-
-// --- FUNÇÕES AUXILIARES ---
 
 short todosBlocosEsgotados(short ativas[], int n)
 {
@@ -91,7 +88,6 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
     int n_blocos[FF];
     memcpy(n_blocos, n_blocos_iniciais, sizeof(int) * FF);
 
-    int fase = 1;
     while (restaUmaFitaPreenchida(n_blocos, F, grupo_entrada * F) == -1)
     {
 
@@ -120,8 +116,6 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
         {
             TipoRegistro registros_na_mem[F];
             short ativas[F];
-            TipoRegistro ultimo_escrito;
-            bool primeiro_registro_bloco = true;
             ainda_ha_blocos_para_intercalar = false;
 
             // Pega o primeiro registro de cada um dos blocos que ainda não foram intercalados
@@ -169,12 +163,6 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
                 if (menor_idx == -1)
                 {
                     break;
-                }
-
-                if (primeiro_registro_bloco)
-                {
-                    ultimo_escrito = registros_na_mem[menor_idx];
-                    primeiro_registro_bloco = false;
                 }
 
                 incrementar_io();
@@ -299,7 +287,6 @@ void metodo_intercalacao_ordenacao(const char *entrada, long n_registros)
 // --- MÉTODO 2: INTERCALAÇÃO COM SELEÇÃO POR SUBSTITUIÇÃO ---
 void metodo_intercalacao_selecao(const char *entrada, long n_registros)
 {
-    printf("--- INICIANDO METODO 2: INTERCALACAO COM SELECAO POR SUBSTITUICAO ---\n");
     mkdir("data/fitas", 0777);
     mkdir("data/resultados",0777);
 
@@ -333,9 +320,6 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
     int blocos_gerados_total = 0;
 
     // VARIÁVEL PARA RASTREAR O ÚLTIMO REGISTRO ESCRITO
-    TipoRegistro ultimo_escrito_bloco;
-
-    printf("--- FASE 1: GERACAO DE BLOCOS ORDENADOS (selecao por substituicao) ---\n");
     incrementar_io();
     lidos_memoria = fread(memoria, sizeof(TipoRegistro), MEM_MAX, in);
     if (lidos_memoria < MEM_MAX)
@@ -347,7 +331,6 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
     {
         heapify(memoria, lidos_memoria, i, congelados);
     }
-    printf("Heap inicial construido com %d registros.\n", lidos_memoria);
     
     while (lidos_memoria > 0)
     {
@@ -358,8 +341,6 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
         // Escreve no arquivo de saída
         incrementar_io();
         fwrite(&menor, sizeof(TipoRegistro), 1, fitas[fita_atual]);
-        printf("Escrito registro %.1f na fita %d.\n", menor.nota, fita_atual);
-        ultimo_escrito_bloco = menor;
 
         TipoRegistro novo;
         bool leu_novo = false;
@@ -369,12 +350,10 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
             if (fread(&novo, sizeof(TipoRegistro), 1, in) == 1)
             {
                 leu_novo = true;
-                printf("Lido novo registro %.1f do arquivo de entrada.\n", novo.nota);
             }
             else
             {
                 fim_arquivo = true;
-                printf("Fim do arquivo de entrada atingido.\n");
             }
         }
 
@@ -385,14 +364,12 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
             {
                 memoria[menor_idx] = novo;
                 congelados[menor_idx] = 0;
-                printf("Novo registro (%.1f) >= ultimo escrito (%.1f). Inserido no heap.\n", novo.nota, menor.nota);
             }
             else
             {
                 memoria[menor_idx] = memoria[lidos_memoria - 1];
                 memoria[lidos_memoria - 1] = novo;
                 congelados[lidos_memoria - 1] = 1; // Congela na última posição
-                printf("Novo registro (%.1f) < ultimo escrito (%.1f). Congelado.\n", novo.nota, menor.nota);
             }
         }
         else
@@ -401,7 +378,6 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
             congelados[menor_idx] = congelados[lidos_memoria - 1];
             congelados[lidos_memoria - 1] = 0;
             lidos_memoria--;
-            printf("Fim de arquivo. Heap reduzido para %d elementos.\n", lidos_memoria);
         }
 
         if (lidos_memoria > 0)
@@ -428,22 +404,18 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
                 {
                     heapify(memoria, lidos_memoria, i, congelados);
                 }
-                printf("Novo bloco iniciado com %d registros congelados.\n", lidos_memoria);
             }
             n_blocos[fita_atual]++;
             blocos_gerados_total++;
             fita_atual = (fita_atual + 1) % F;
-            printf("Bloco finalizado. Novo bloco comeca na fita %d. Total de blocos gerados: %d\n", fita_atual, blocos_gerados_total);
         }
     }
 
-    printf("Escrevendo elementos restantes do ultimo heap...\n");
     while (lidos_memoria > 0)
     {
         TipoRegistro menor = memoria[0];
         incrementar_io();
         fwrite(&menor, sizeof(TipoRegistro), 1, fitas[fita_atual]);
-        printf("Escrito registro final %.1f na fita %d.\n", menor.nota, fita_atual);
 
         memoria[0] = memoria[lidos_memoria - 1];
         congelados[0] = congelados[lidos_memoria - 1];
@@ -454,7 +426,6 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
     }
     n_blocos[fita_atual]++;
     blocos_gerados_total++;
-    printf("Fase 1 concluida. Total de blocos gerados: %d\n", blocos_gerados_total);
 
     fclose(in);
 
@@ -467,5 +438,4 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
 
     for (int i = 0; i < FF; i++)
         fclose(fitas[i]);
-    printf("--- FIM DO METODO 2 ---\n");
 }

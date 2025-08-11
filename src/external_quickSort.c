@@ -42,30 +42,6 @@ static void remover_max(TipoArea *area, TipoRegistro *reg) {
     area->num_registros--;
 }
 
-// Verifica se um registro é válido (nota entre 0.0 e 100.0)
-// static int registro_valido(TipoRegistro *reg) {
-//     return (reg->nota >= 0.0 && reg->nota <= 100.0);
-// }
-
-// // Troca dois registros no arquivo
-// static void trocar_registros(FILE *arq, long pos1, long pos2) {
-//     TipoRegistro reg1, reg2;
-    
-//     fseek(arq, pos1 * sizeof(TipoRegistro), SEEK_SET);
-//     fread(&reg1, sizeof(TipoRegistro), 1, arq);
-    
-//     fseek(arq, pos2 * sizeof(TipoRegistro), SEEK_SET);
-//     fread(&reg2, sizeof(TipoRegistro), 1, arq);
-    
-//     fseek(arq, pos1 * sizeof(TipoRegistro), SEEK_SET);
-//     fwrite(&reg2, sizeof(TipoRegistro), 1, arq);
-    
-//     fseek(arq, pos2 * sizeof(TipoRegistro), SEEK_SET);
-//     fwrite(&reg1, sizeof(TipoRegistro), 1, arq);
-    
-//     incrementar_io(); // Contabiliza 4 operações de I/O
-// }
-
 // --- Função de Partição com Área de Pivô ---
 static void particao(FILE *arq, long inicio, long fim, long *i, long *j) {
     TipoArea area;
