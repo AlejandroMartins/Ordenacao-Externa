@@ -7,12 +7,14 @@
 #include "./src/include/common_types.h"
 #include "./src/include/utils.h" 
 
+// Remove espaços em branco e caracteres de controle no final da string
 void trim_trailing_spaces(char *s)
 {
-    int i = strlen(s) - 1;
+    int i = strlen(s) - 1; // índice do último caractere da string
+     // Enquanto não chegar no início e o caractere for espaço, tab, nova linha
     while (i >= 0 && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
     {
-        s[i] = '\0';
+        s[i] = '\0'; // substitui caractere por fim de string
         i--;
     }
 }
@@ -39,12 +41,14 @@ int compararDescendente(const void *a, const void *b) {
 void gerarArquivosBases(const char *filename, int situacao) {
     long total = 471705;
 
+    // Abre arquivo binário para escrita
     FILE *file = fopen(filename, "wb");
     if (file == NULL) {
         perror("Erro ao criar o arquivo de dados");
         return;
     }
 
+    // Aloca memória para todos os registros
     TipoRegistro *alunos = (TipoRegistro *)malloc(total * sizeof(TipoRegistro));
     if (alunos == NULL) {
         perror("Erro de alocacao de memoria para registros");
@@ -52,6 +56,7 @@ void gerarArquivosBases(const char *filename, int situacao) {
         return;
     }
 
+    // Abre arquivo texto original para leitura dos dados
     FILE *inicial = fopen("data/PROVAO.TXT", "r");
     if (inicial == NULL) {
         perror("Erro ao abrir o arquivo PROVAO.TXT");
@@ -62,8 +67,10 @@ void gerarArquivosBases(const char *filename, int situacao) {
     
     char linha[100];
     long i = 0;
+    // Lê linha a linha do arquivo texto até atingir o total esperado
     while(i < total && fgets(linha, sizeof(linha), inicial) != NULL) {
-        if(strlen(linha) > 1) {
+        if(strlen(linha) > 1) { // ignora linhas vazias ou muito curtas
+            // Extrai dados formatados da linha para campos do registro
             char temp_inscricao[9];
             char temp_nota[6];
             
@@ -94,12 +101,16 @@ void gerarArquivosBases(const char *filename, int situacao) {
     }
     fclose(inicial);
     total = i;
-    
+
+    // Ordena os registros conforme a situação:    
     if (situacao == 1) {
+        // Ordena ascendente
         qsort(alunos, total, sizeof(TipoRegistro), compararAscendente);
     } else if (situacao == 2) {
+        // Ordena descendente
         qsort(alunos, total, sizeof(TipoRegistro), compararDescendente);
     } else {
+        // Embaralha aleatoriamente
         srand(time(NULL));
         for (long j = total - 1; j > 0; j--) {
             long k = rand() % (j + 1);
@@ -109,6 +120,7 @@ void gerarArquivosBases(const char *filename, int situacao) {
         }
     }
 
+    // Escreve os registros ordenados no arquivo binário
     fwrite(alunos, sizeof(TipoRegistro), total, file);
     
     free(alunos);
@@ -124,6 +136,7 @@ void gerarArquivos(const char *filename, long qtd, int situacao) {
         return;
     }
 
+    // Abre arquivo base correspondente à situação para leitura
     FILE *inicial;
     if (situacao == 1) {
         inicial = fopen("data/provao_471705_asc.bin", "rb");
@@ -138,7 +151,8 @@ void gerarArquivos(const char *filename, long qtd, int situacao) {
         fclose(file);
         return;
     }
-    
+
+    // Aloca espaço para qtd registros    
     TipoRegistro *alunos = (TipoRegistro *)malloc(qtd * sizeof(TipoRegistro));
     if (alunos == NULL) {
         perror("Erro de alocacao de memoria para registros");
@@ -147,6 +161,7 @@ void gerarArquivos(const char *filename, long qtd, int situacao) {
         return;
     }
 
+    // Lê qtd registros do arquivo base e escreve no arquivo destino
     fread(alunos, sizeof(TipoRegistro), qtd, inicial);
     fwrite(alunos, sizeof(TipoRegistro), qtd, file);
 
@@ -156,13 +171,16 @@ void gerarArquivos(const char *filename, long qtd, int situacao) {
     printf("Arquivo '%s' gerado com %ld notas na situacao %d.\n", filename, qtd, situacao);
 }
 
+// Função principal que gera arquivos de diferentes tamanhos e situações para testes
 int main(int argc, char *argv[]) {
     printf("--- Geração de arquivos de pré ordenados para o TP02 ---\n");
 
+    // Tamanhos de arquivos menores para gerar
     long quantidades[] = {100, 1000, 10000, 100000};
     int situacoes[] = {1, 2, 3};
     char filename[256];
 
+    // Primeiro gera os arquivos base completos (471705 registros) para cada situação
     for (int s = 0; s < sizeof(situacoes) / sizeof(situacoes[0]); s++) {
         const char* situacao_str;
         if (situacoes[s] == 1) situacao_str = "asc";
@@ -172,6 +190,7 @@ int main(int argc, char *argv[]) {
         gerarArquivosBases(filename, situacoes[s]);
     }
     
+    // Depois gera os arquivos menores a partir dos arquivos base
     for (int q = 0; q < sizeof(quantidades) / sizeof(quantidades[0]); q++) {
         for (int s = 0; s < sizeof(situacoes) / sizeof(situacoes[0]); s++) {
             const char* situacao_str;
@@ -183,9 +202,6 @@ int main(int argc, char *argv[]) {
             sprintf(filename, "data/provao_%ld_%s.bin", qtd, situacao_str);
             gerarArquivos(filename, qtd, situacoes[s]);
 
-            if (qtd == 1000) {
-                // A conversão para TXT agora é uma função separada, não precisa ser aqui
-            }
         }
     }
 

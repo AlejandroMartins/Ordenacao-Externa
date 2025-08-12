@@ -30,6 +30,7 @@ static void inserir_area(TipoArea *area, TipoRegistro reg) {
 // Remove o menor registro da área
 static void remover_min(TipoArea *area, TipoRegistro *reg) {
     *reg = area->registros[0];
+    // Desloca todos os elementos para a esquerda
     for (int i = 0; i < area->num_registros - 1; i++) {
         area->registros[i] = area->registros[i+1];
     }
@@ -61,6 +62,7 @@ static void particao(FILE *arq, long inicio, long fim, long *i, long *j) {
     while (Li <= Ls) {
         if (area.num_registros < TAM_AREA) {
             TipoRegistro reg;
+            // Leitura alternada entre início e fim do arquivo
             if (onde_ler == 0) {
                 fseek(arq, Li * sizeof(TipoRegistro), SEEK_SET);
                 fread(&reg, sizeof(TipoRegistro), 1, arq);
@@ -74,17 +76,18 @@ static void particao(FILE *arq, long inicio, long fim, long *i, long *j) {
             }
             incrementar_io();
 
+            // grava no início do arquivo e incrementa Ei
             if (reg.nota < Linf) {
                 fseek(arq, Ei * sizeof(TipoRegistro), SEEK_SET);
                 fwrite(&reg, sizeof(TipoRegistro), 1, arq);
                 Ei++;
                 incrementar_io();
-            } else if (reg.nota > Lsup) {
+            } else if (reg.nota > Lsup) { //grava no fim do arquivo e decrementa Es
                 fseek(arq, Es * sizeof(TipoRegistro), SEEK_SET);
                 fwrite(&reg, sizeof(TipoRegistro), 1, arq);
                 Es--;
                 incrementar_io();
-            } else {
+            } else { //insere na área de pivô
                 inserir_area(&area, reg);
             }
             continue;
@@ -92,21 +95,21 @@ static void particao(FILE *arq, long inicio, long fim, long *i, long *j) {
 
         // Área cheia: balanceia subvetores
         TipoRegistro reg_removido;
-        long T1 = Ei - inicio;
-        long T2 = fim - Es;
+        long T1 = Ei - inicio; // tamanho do subvetor esquerdo
+        long T2 = fim - Es; // tamanho do subvetor direito
 
         if (T1 < T2) {
-            remover_min(&area, &reg_removido);
+            remover_min(&area, &reg_removido); // remove menor da área
             fseek(arq, Ei * sizeof(TipoRegistro), SEEK_SET);
             fwrite(&reg_removido, sizeof(TipoRegistro), 1, arq);
             Ei++;
-            Linf = reg_removido.nota;
+            Linf = reg_removido.nota; // ajusta limite inferior
         } else {
-            remover_max(&area, &reg_removido);
+            remover_max(&area, &reg_removido); // remove maior da área
             fseek(arq, Es * sizeof(TipoRegistro), SEEK_SET);
             fwrite(&reg_removido, sizeof(TipoRegistro), 1, arq);
             Es--;
-            Lsup = reg_removido.nota;
+            Lsup = reg_removido.nota; // ajusta limite superior
         }
         incrementar_io();
     }
@@ -121,6 +124,7 @@ static void particao(FILE *arq, long inicio, long fim, long *i, long *j) {
         incrementar_io();
     }
 
+    // Atualiza os índices para a próxima recursão do quicksort
     *i = Ei - 1;
     *j = Es + 1;
 }
@@ -136,6 +140,7 @@ void quicksort_externo(FILE *arq, long inicio, long fim) {
         fread(memoria, sizeof(TipoRegistro), num_registros, arq);
         incrementar_io();
 
+        // Insertion sort simples para ordenar os registros em memória
         for (long i = 1; i < num_registros; i++) {
             TipoRegistro chave = memoria[i];
             long j = i - 1;
@@ -168,7 +173,7 @@ void quicksort_externo(FILE *arq, long inicio, long fim) {
     }
 }
 
-// --- Função de Verificação de Integridade ---
+// Função para imprimir os registros do arquivo para verificação (debug)
 void verificar_integridade(FILE *arq, long qtd) {
     rewind(arq);
     TipoRegistro reg;

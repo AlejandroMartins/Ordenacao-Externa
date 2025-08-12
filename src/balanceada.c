@@ -26,6 +26,7 @@ int comparadorNotas(const void *a, const void *b)
     return 0;
 }
 
+// Retorna 1 (true) se todas as fitas (blocos) estão esgotadas
 short todosBlocosEsgotados(short ativas[], int n)
 {
     for (int i = 0; i < n; i++)
@@ -36,6 +37,8 @@ short todosBlocosEsgotados(short ativas[], int n)
     return 1;
 }
 
+// Verifica se entre n fitas (a partir de índice inicio) só existe uma com blocos > 0
+// Retorna índice dessa fita se for única, ou -1 caso contrário
 int restaUmaFitaPreenchida(int nBlocos[], int n, int inicio)
 {
     int preenchida = -1;
@@ -46,27 +49,32 @@ int restaUmaFitaPreenchida(int nBlocos[], int n, int inicio)
             if (preenchida == -1)
                 preenchida = i;
             else
-                return -1;
+                return -1; // achou mais de uma fita preenchida
         }
     }
+    // Retorna índice absoluto da fita única preenchida ou -1 se nenhuma
     return (preenchida == -1) ? preenchida : inicio + preenchida;
 }
 
+// Heapify adaptado para heap mínimo considerando um array de registros e "congelados"
 void heapify(TipoRegistro arr[], int n, int i, short congelados[])
 {
     int menor = i;
     int esq = 2 * i + 1;
     int dir = 2 * i + 2;
-
+    
+    // Verifica filho esquerdo não congelado e menor que atual
     if (esq < n && congelados[esq] == 0 && arr[esq].nota < arr[menor].nota)
     {
         menor = esq;
     }
+    // Verifica filho direito não congelado e menor que atual menor
     if (dir < n && congelados[dir] == 0 && arr[dir].nota < arr[menor].nota)
     {
         menor = dir;
     }
 
+    // Se menor mudou, troca e chama recursivamente heapify para manter heap mínimo
     if (menor != i)
     {
         TipoRegistro tmp = arr[i];
@@ -84,16 +92,18 @@ void heapify(TipoRegistro arr[], int n, int i, short congelados[])
 // --- INTERCALAÇÃO BALANCEADA M-WAY ---
 void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_iniciais[FF])
 {
-    short grupo_entrada = 0;
+    short grupo_entrada = 0; // Indica qual grupo de fitas está como entrada (0 ou 1)
     int n_blocos[FF];
-    memcpy(n_blocos, n_blocos_iniciais, sizeof(int) * FF);
+    memcpy(n_blocos, n_blocos_iniciais, sizeof(int) * FF); // Copia contagem de blocos para controle interno
 
+    // Enquanto houver mais de uma fita com blocos para processar
     while (restaUmaFitaPreenchida(n_blocos, F, grupo_entrada * F) == -1)
     {
 
-        int entrada_inicio = grupo_entrada * F;
-        int saida_inicio = (1 - grupo_entrada) * F;
+        int entrada_inicio = grupo_entrada * F; // índice inicial do grupo de entrada
+        int saida_inicio = (1 - grupo_entrada) * F; // índice inicial do grupo de saída
 
+        // Limpa as fitas de saída
         for (int i = 0; i < F; i++)
         {
             rewind(fitas[saida_inicio + i]);
@@ -101,6 +111,7 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
             n_blocos[saida_inicio + i] = 0;
         }
 
+        // Reposiciona as fitas de entrada para início
         for (int i = 0; i < F; i++)
         {
             rewind(fitas[entrada_inicio + i]);
@@ -131,23 +142,24 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
                     }
                     else
                     {
-                        ativas[i] = -1;
+                        ativas[i] = -1;// fita esgotada
                     }
                 }
                 else
                 {
-                    ativas[i] = -1;
+                    ativas[i] = -1;// bloco esgotado
                 }
             }
 
             if (!ainda_ha_blocos_para_intercalar)
-                break;
+                break; // encerra se não há blocos para processar
 
             // Inicia um novo bloco de saída
             n_blocos[fita_saida_atual]++;
             while (true)
             {
                 int menor_idx = -1;
+                // Busca o menor registro entre os ativos para escrever no bloco de saída
                 for (int i = 0; i < F; i++)
                 {
                     if (ativas[i] != -1)
@@ -162,7 +174,7 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
 
                 if (menor_idx == -1)
                 {
-                    break;
+                    break; // nenhum ativo restante, fim do bloco
                 }
 
                 incrementar_io();
@@ -170,20 +182,20 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
 
                 TipoRegistro novo;
                 incrementar_io();
+                // Tenta ler próximo registro da fita que forneceu o menor
                 if (fread(&novo, sizeof(TipoRegistro), 1, fitas[entrada_inicio + menor_idx]) == 1)
                 {
-                    // VERIFICAÇÃO CRÍTICA
+                    // Se o próximo registro quebra a ordem crescente do bloco, bloqueia esta fita no bloco atual
                     if (novo.nota < registros_na_mem[menor_idx].nota)
                     {
 
-                        // A fita continua, mas o bloco atual acabou, então ela é desativada
-                        // para a construção do bloco de saída atual.
-                        ativas[menor_idx] = -1;
+                        ativas[menor_idx] = -1; // fita desativada neste bloco
+                        // Volta um registro para ler na próxima intercalação
                         fseek(fitas[entrada_inicio + menor_idx], -sizeof(TipoRegistro), SEEK_CUR); // Volta para ler na próxima intercalação
                     }
                     else
                     {
-                        registros_na_mem[menor_idx] = novo;
+                        registros_na_mem[menor_idx] = novo; // atualiza o registro lido para próximo ciclo
                     }
                 }
                 else
@@ -193,12 +205,14 @@ void intercalacao_balanceada(FILE **fitas, long n_registros, int n_blocos_inicia
                     blocos_restantes_fita[menor_idx]--;
                 }
             }
+            // Avança para próxima fita de saída
             fita_saida_atual = (fita_saida_atual + 1 - saida_inicio) % F + saida_inicio;
         }
 
-        grupo_entrada = 1 - grupo_entrada;
+        grupo_entrada = 1 - grupo_entrada; // alterna entre grupos de entrada e saída
     }
 
+    // Após finalização, copia conteúdo da fita que sobrou para arquivo final de ordenação
     int f_final = restaUmaFitaPreenchida(n_blocos, F, grupo_entrada * F);
     if (f_final != -1)
     {
@@ -246,9 +260,9 @@ void metodo_intercalacao_ordenacao(const char *entrada, long n_registros)
         }
     }
 
-    TipoRegistro buffer[MEM_MAX];
-    int n_blocos[FF] = {0};
-    int fita_atual = 0;
+    TipoRegistro buffer[MEM_MAX]; // buffer para ler blocos em memória
+    int n_blocos[FF] = {0}; // contador de blocos gerados em cada fita
+    int fita_atual = 0; // fita atual para gravação
     long registros_restantes = n_registros;
     long total_lidos = 0;
 
@@ -259,15 +273,17 @@ void metodo_intercalacao_ordenacao(const char *entrada, long n_registros)
         if (lidos == 0)
             break;
 
+        // Ordena bloco em memória pelo campo nota
         qsort(buffer, lidos, sizeof(TipoRegistro), comparadorNotas);
 
         incrementar_io();
+        // Grava bloco ordenado na fita atual
         fwrite(buffer, sizeof(TipoRegistro), lidos, fitas[fita_atual]);
 
         n_blocos[fita_atual]++;
         registros_restantes -= lidos;
         total_lidos += lidos;
-        fita_atual = (fita_atual + 1) % F;
+        fita_atual = (fita_atual + 1) % F; //alterna fita para próximo bloco
     }
 
     fclose(in);
@@ -311,10 +327,10 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
         }
     }
 
-    TipoRegistro memoria[MEM_MAX];
-    short congelados[MEM_MAX];
-    int n_blocos[FF] = {0};
-    int fita_atual = 0;
+    TipoRegistro memoria[MEM_MAX]; // buffer de registros em memória
+    short congelados[MEM_MAX]; // vetor para marcar registros congelados
+    int n_blocos[FF] = {0};// contador de blocos por fita
+    int fita_atual = 0;// fita atual para gravação
     int lidos_memoria;
     bool fim_arquivo = false;
     int blocos_gerados_total = 0;
@@ -327,23 +343,26 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
     for (int i = 0; i < lidos_memoria; i++)
         congelados[i] = 0;
 
+    // Constroi heap mínimo a partir do array memória
     for (int i = (lidos_memoria / 2) - 1; i >= 0; i--)
     {
         heapify(memoria, lidos_memoria, i, congelados);
     }
     
+    // Enquanto houver registros na memória para processar
     while (lidos_memoria > 0)
     {
         
         int menor_idx = 0;
         TipoRegistro menor = memoria[menor_idx];
 
-        // Escreve no arquivo de saída
+        // Escreve o menor registro do heap na fita atual
         incrementar_io();
         fwrite(&menor, sizeof(TipoRegistro), 1, fitas[fita_atual]);
 
         TipoRegistro novo;
         bool leu_novo = false;
+        // Lê um novo registro do arquivo, se possível
         if (!fim_arquivo)
         {
             incrementar_io();
@@ -360,6 +379,7 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
         if (leu_novo)
         {
             incrementar_comparacao();
+            // Se o novo registro mantém a ordenação crescente
             if (novo.nota >= menor.nota)
             {
                 memoria[menor_idx] = novo;
@@ -367,13 +387,14 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
             }
             else
             {
+                // Caso contrário, move o registro para o final e congela para bloco atual
                 memoria[menor_idx] = memoria[lidos_memoria - 1];
                 memoria[lidos_memoria - 1] = novo;
                 congelados[lidos_memoria - 1] = 1; // Congela na última posição
             }
         }
         else
-        {
+        {   // Fim do arquivo: remove registro do heap, ajusta congelados e decrementa contagem
             memoria[menor_idx] = memoria[lidos_memoria - 1];
             congelados[menor_idx] = congelados[lidos_memoria - 1];
             congelados[lidos_memoria - 1] = 0;
@@ -386,6 +407,7 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
         }
         else
         {
+            // Quando heap está vazio, reinicia com registros congelados para formar novo bloco
             int novos_lidos = 0;
             for (int i = 0; i < MEM_MAX; i++)
             {
@@ -400,17 +422,19 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
 
             if (lidos_memoria > 0)
             {
+                // Reconstrói heap
                 for (int i = (lidos_memoria / 2) - 1; i >= 0; i--)
                 {
                     heapify(memoria, lidos_memoria, i, congelados);
                 }
             }
-            n_blocos[fita_atual]++;
+            n_blocos[fita_atual]++; // Incrementa contador de blocos gerados
             blocos_gerados_total++;
-            fita_atual = (fita_atual + 1) % F;
+            fita_atual = (fita_atual + 1) % F; // Avança para próxima fita
         }
     }
 
+    // Escreve os registros restantes na memória para a fita atual
     while (lidos_memoria > 0)
     {
         TipoRegistro menor = memoria[0];
@@ -429,13 +453,16 @@ void metodo_intercalacao_selecao(const char *entrada, long n_registros)
 
     fclose(in);
 
+    // Reposiciona todas as fitas para a fase de intercalação final
     for (int i = 0; i < FF; i++)
     {
         rewind(fitas[i]);
     }
 
+    // Realiza intercalação balanceada para combinar os blocos gerados
     intercalacao_balanceada(fitas, n_registros, n_blocos);
 
+    // Fecha todas as fitas temporárias
     for (int i = 0; i < FF; i++)
         fclose(fitas[i]);
 }

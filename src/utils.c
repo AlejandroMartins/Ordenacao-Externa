@@ -37,6 +37,7 @@ double finalizar_tempo(clock_t inicio) {
 
 void converterBinarioParaTexto(const char *arquivo_binario, const char *arquivo_texto, long quantidade_registros)
 {
+    // Abre o arquivo binário para leitura
     FILE *bin_file = fopen(arquivo_binario, "rb");
     if (bin_file == NULL)
     {
@@ -55,8 +56,10 @@ void converterBinarioParaTexto(const char *arquivo_binario, const char *arquivo_
     TipoRegistro reg;
     long count = 0;
 
+    // Enquanto conseguir ler um registro e não ultrapassar a quantidade desejada
     while (fread(&reg, sizeof(TipoRegistro), 1, bin_file) == 1 && count < quantidade_registros)
     {
+        // Escreve no arquivo texto formatando os campos do registro
         fprintf(txt_file, "%08lld %05.1f %s %s %s\n",
                 reg.inscricao, reg.nota, reg.estado, reg.cidade, reg.curso);
         count++;
